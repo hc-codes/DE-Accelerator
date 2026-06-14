@@ -320,7 +320,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => setRoute(prev => ({ ...prev, mainView: "curriculum", selectedDayId: route.selectedDayId || "W1-D1", subView: { type: "list" } }))}
+                onClick={() => setRoute({ mainView: "curriculum", selectedDayId: "", subView: { type: "list" } })}
                 className={`px-3 py-2 rounded-xl text-left text-xs font-mono font-bold flex items-center justify-between transition-all border outline-none cursor-pointer ${
                   route.mainView === "curriculum"
                     ? "bg-gradient-to-r from-theme-card to-theme-bg text-theme-accent-primary border-theme-border/80 shadow-sm font-black scale-[0.98]"
@@ -416,7 +416,7 @@ export default function App() {
                 completedDays={completedDays}
                 onToggleTodo={(todoIdx) => handleToggleTodo(activeDay, todoIdx)}
                 onNavigateHome={() => setRoute({ mainView: "dashboard", selectedDayId: route.selectedDayId, subView: { type: "list" } })}
-                onNavigateCurriculum={() => setRoute({ mainView: "curriculum", selectedDayId: route.selectedDayId, subView: { type: "list" } })}
+                onNavigateCurriculum={() => setRoute({ mainView: "curriculum", selectedDayId: "", subView: { type: "list" } })}
                 onNavigateToSubView={(subView) => setRoute(prev => ({ ...prev, subView }))}
                 subView={route.subView}
                 onSaveCodeDay={(code) => handleUpdateSavedCode(activeDay, code)}
@@ -490,9 +490,9 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setRoute({ mainView: "curriculum", selectedDayId: route.selectedDayId || "W1-D1", subView: { type: "list" } })}
+          onClick={() => setRoute({ mainView: "curriculum", selectedDayId: "", subView: { type: "list" } })}
           className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
-            route.mainView === "curriculum" && route.selectedDayId ? "text-theme-accent-primary font-bold" : "hover:text-theme-text"
+            route.mainView === "curriculum" && !route.selectedDayId ? "text-theme-accent-primary font-bold" : "hover:text-theme-text"
           }`}
         >
           <BookOpen className="w-4 h-4" />

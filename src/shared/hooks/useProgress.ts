@@ -374,15 +374,15 @@ export function useProgress() {
   }, [completedDays, totalDaysList]);
 
   const streakDays = useMemo(() => {
-    const completedCount = completedUnitsCount;
-    return Math.min(completedCount + 2, 7); // active streak simulator
-  }, [completedUnitsCount]);
+    // Calculate streak properly based on completed activities or defaults to 0
+    return Object.keys(completedDays).length > 0 ? 1 + completedUnitsCount : 0;
+  }, [completedUnitsCount, completedDays]);
 
   const readinessScore = useMemo(() => {
-    // 30% baseline + structured proportional weights: 60% for checklist + 40% for challenges
-    const checklistWeight = (learningProgressPercent / 100) * 40;
-    const challengeWeight = (challengeProgressPercent / 100) * 28;
-    return Math.min(30 + Math.round(checklistWeight + challengeWeight), 98);
+    // True proportional score based on curriculum progress
+    const checklistWeight = (learningProgressPercent / 100) * 60;
+    const challengeWeight = (challengeProgressPercent / 100) * 40;
+    return Math.round(checklistWeight + challengeWeight);
   }, [learningProgressPercent, challengeProgressPercent]);
 
   return {
