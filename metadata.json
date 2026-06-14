@@ -1,0 +1,6 @@
+{
+  "name": "DE Transition Mentor",
+  "description": "An elite training portal and modern code mentor for Informatica IDMC developers transitioning into advanced SQL & Python data engineering.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
