@@ -3,7 +3,7 @@ import {
   Award, Sparkles, Clock, Calendar, CheckSquare, 
   Play, BookOpen, Briefcase, Activity, CheckCircle2, 
   ChevronRight, ArrowRight, Flame, Hourglass, Trash2, Edit2, Check,
-  GraduationCap, ClipboardCheck
+  GraduationCap, ClipboardCheck, Mail, Bell
 } from "lucide-react";
 import { CurriculumWeek, CurriculumDay } from "../../data/curriculum";
 import { ActivityLogEntry } from "../../shared/types";
@@ -43,6 +43,59 @@ export function DashboardPage({
 }: DashboardPageProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(menteeName);
+
+  const [reminderState, setReminderState] = useState<{
+    sending: boolean;
+    success: boolean | null;
+    message: string;
+    detailsVisible: boolean;
+    simulatedBody?: string;
+  }>({
+    sending: false,
+    success: null,
+    message: "",
+    detailsVisible: false,
+  });
+
+  const triggerEmailReminder = async () => {
+    setReminderState(prev => ({ ...prev, sending: true, success: null, message: "" }));
+    try {
+      const response = await fetch("/api/coach/reminder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: "athilavp@gmail.com",
+          pendingCount: daysPending,
+          progressPercent: overallProgressPercent,
+          nextLessonTitle: currentResumeDay?.focusTitle || "Relational Database Performance"
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setReminderState({
+          sending: false,
+          success: true,
+          message: data.message || "Email reminder dispatched successfully!",
+          detailsVisible: !!data.simulated,
+          simulatedBody: data.body
+        });
+      } else {
+        setReminderState({
+          sending: false,
+          success: false,
+          message: data.error || "Failed to send email. Check credentials.",
+          detailsVisible: false
+        });
+      }
+    } catch (err: any) {
+      setReminderState({
+        sending: false,
+        success: false,
+        message: err.message || "Failed to contact reminder dispatch service.",
+        detailsVisible: false
+      });
+    }
+  };
 
   // Fallback check if curriculum still loading
   const safeCurriculum = useMemo(() => {
@@ -445,7 +498,7 @@ export function DashboardPage({
       )}
 
       {/* Pathway logs */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Next 5 topics list */}
         <div className="bg-theme-card border border-theme-border p-5 rounded-2xl flex flex-col justify-between space-y-4">
@@ -463,7 +516,7 @@ export function DashboardPage({
                     key={day.id} 
                     className="py-3 last:pb-0 flex items-center justify-between gap-4 transition duration-200"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 font-sans">
                       <div className="w-7 h-7 rounded bg-theme-bg border border-theme-border font-mono text-[9px] font-bold text-theme-muted flex items-center justify-center shrink-0">
                         {day.id}
                       </div>
@@ -501,7 +554,7 @@ export function DashboardPage({
                 <p className="text-xs text-theme-muted italic py-12 text-center font-mono">No learning events tracked in current session.</p>
               ) : (
                 activityLog.slice(0, 5).map((log) => (
-                  <div key={log.id} className="flex gap-3 items-start text-xs">
+                  <div key={log.id} className="flex gap-3 items-start text-xs font-sans">
                     <div className={`p-1 rounded mt-0.5 shrink-0 border ${
                       log.type === "todo_completed" || log.type === "day_completed" || log.type === "challenge_solved"
                         ? "bg-theme-success/10 border-theme-success/20 text-theme-success"
@@ -523,6 +576,84 @@ export function DashboardPage({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Daily Reminders Integration */}
+        <div className="bg-theme-card border border-theme-border p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm" id="reminders-panel">
+          <div className="space-y-3">
+            <span className="text-[10px] font-mono uppercase text-theme-muted font-semibold tracking-wider flex items-center gap-1.5">
+              <Bell className="w-3.5 h-3.5 text-theme-accent-primary animate-pulse" /> DAILY CAMPAIGN REMINDER SERVICE
+            </span>
+
+            <div className="space-y-3 text-xs leading-relaxed font-sans">
+              <div className="bg-theme-bg/60 p-3 rounded-xl border border-theme-border space-y-1.5">
+                <div className="flex justify-between items-center text-[9px] font-mono">
+                  <span className="text-theme-muted font-bold">RECIPIENT PORTAL</span>
+                  <span className="text-theme-success font-black tracking-widest bg-theme-success/10 border border-theme-success/20 px-1.5 py-0.5 rounded text-[8px]">ACTIVE</span>
+                </div>
+                <p className="text-theme-text font-bold text-xs truncate">athilavp@gmail.com</p>
+                <div className="flex items-center gap-1 font-mono text-[9px] text-theme-muted pt-0.5">
+                  <Clock className="w-3 h-3 text-theme-accent-primary" />
+                  <span>Daily at 8:30 PM Standard Time</span>
+                </div>
+              </div>
+
+              <div className="space-y-1 bg-theme-bg/20 p-2.5 rounded-xl border border-theme-border/60 text-[10px] text-theme-muted font-sans">
+                <p className="font-bold text-theme-text flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5 text-theme-accent-secondary" /> Study Campaign Parameters:
+                </p>
+                <ul className="list-disc list-inside space-y-0.5 mt-1 font-mono text-[9px]">
+                  <li>Pending Tasks: {daysPending} units left</li>
+                  <li>Overall Progress: {overallProgressPercent}%</li>
+                  <li>Recommended: {currentResumeDay?.focusTitle || "Next Lesson"}</li>
+                </ul>
+              </div>
+
+              {reminderState.success !== null && (
+                <div className={`p-2.5 rounded-lg border text-[10px] ${
+                  reminderState.success 
+                    ? "bg-theme-success/10 border-theme-success/20 text-theme-success" 
+                    : "bg-red-400/10 border-red-400/20 text-red-400"
+                }`}>
+                  <p className="font-bold font-mono">{reminderState.success ? "✓ Reminders Formed" : "✗ Dispatch Failure"}</p>
+                  <p className="mt-0.5 leading-snug">{reminderState.message}</p>
+                  
+                  {reminderState.simulatedBody && (
+                    <div className="mt-2 pt-1.5 border-t border-theme-border/10">
+                      <button 
+                        onClick={() => setReminderState(prev => ({ ...prev, detailsVisible: !prev.detailsVisible }))}
+                        className="text-[9px] font-mono underline hover:text-theme-accent-primary cursor-pointer flex items-center gap-1"
+                      >
+                        {reminderState.detailsVisible ? "Hide Email Output" : "View Rendereable Output"}
+                      </button>
+                      
+                      {reminderState.detailsVisible && (
+                        <div className="bg-theme-bg p-2 rounded border border-theme-border max-h-24 overflow-y-auto font-mono text-[8px] text-theme-muted mt-1 leading-normal select-text">
+                          <p className="text-theme-accent-primary font-bold">To: athilavp@gmail.com</p>
+                          <p className="text-theme-accent-secondary font-bold">Subject: Today's Learning Session Awaits 🚀</p>
+                          <div className="mt-1.5 border-t border-theme-border/50 pt-1 text-[8px]">
+                            {reminderState.simulatedBody.replace(/<[^>]*>/g, " ").trim().substring(0, 320)}...
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={triggerEmailReminder}
+            disabled={reminderState.sending}
+            className={`w-full py-2.5 px-3 text-[10px] font-bold uppercase tracking-wider rounded-xl transition duration-150 border cursor-pointer shrink-0 flex items-center justify-center gap-1.5 ${
+              reminderState.sending 
+                ? "bg-theme-hover border-theme-border text-theme-muted cursor-not-allowed" 
+                : "bg-theme-accent-primary border-theme-accent-primary/20 hover:opacity-90 text-theme-inverse"
+            }`}
+          >
+            {reminderState.sending ? "Dispatching Alert..." : "⚡ Dispatch Manual Reminder"}
+          </button>
         </div>
  
       </div>

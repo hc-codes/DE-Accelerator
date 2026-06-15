@@ -1,22 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root, .theme-focus-dark {
-  --bg-main: #0F1117; /* GitHub / Linear Dark base */
-  --bg-card: #151922; /* secondary surface */
-  --bg-card-hover: #1C2230; /* elevated cards */
-  --text-main: #E6EDF3; /* soft white readable text */
-  --text-muted: #8B949E; /* github grey */
-  --text-inverse: #0F1117;
-  --border-color: #21262D;
-  --accent-primary: #5B9DFF; /* soft developer blue */
-  --accent-secondary: #9E7AFF; /* soft amethyst */
+  --bg-main: #111827; /* Main Background */
+  --bg-card: #1E293B; /* Cards */
+  --bg-card-hover: #202938; /* Content Surface / Secondary Card hover */
+  --bg-secondary: #1F2937; /* Secondary Surface */
+  --text-main: #E5E7EB; /* primary soft gray text */
+  --text-secondary: #CBD5E1; /* secondary soft gray text */
+  --text-muted: #94A3B8; /* muted soft gray text */
+  --text-inverse: #111827;
+  --border-color: #374151; /* clean slate-700 borders */
+  --accent-primary: #818CF8; /* friendly soft blue-indigo */
+  --accent-secondary: #F472B6; /* soft warming accent rose */
   --success-color: #34D399;
   --warning-color: #FBBF24;
-  /* Code blocks styles: GitHub Dark Style */
-  --code-bg: #0D1117;
-  --code-text: #E6EDF3;
-  --code-border: #30363D;
+  /* Code blocks styles */
+  --code-bg: #1F2937; /* Secondary Surface */
+  --code-text: #CBD5E1; /* Secondary text */
+  --code-border: #374151;
 }
 
 .theme-focus-light {
@@ -56,14 +58,16 @@
 }
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-reading: "Source Serif 4", Georgia, serif;
+  --font-sans: "Fira Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-reading: "Fira Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   --color-theme-bg: var(--bg-main);
   --color-theme-card: var(--bg-card);
   --color-theme-hover: var(--bg-card-hover);
+  --color-theme-secondary: var(--bg-secondary);
   --color-theme-text: var(--text-main);
+  --color-theme-text-secondary: var(--text-secondary);
   --color-theme-muted: var(--text-muted);
   --color-theme-border: var(--border-color);
   --color-theme-accent-primary: var(--accent-primary);
@@ -85,7 +89,7 @@ body {
 
 /* Kindle-like reading content typography adjustments */
 .reading-content {
-  font-family: "Source Serif 4", Georgia, serif !important;
+  font-family: "Fira Sans", sans-serif !important;
   font-size: 1.125rem; /* 18px standard */
   line-height: 1.8; /* high line height for reading flow */
   letter-spacing: -0.003em;

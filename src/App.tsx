@@ -60,6 +60,41 @@ export default function App() {
   const [isProgressOpen, setIsProgressOpen] = useState(false);
   const [editingName, setEditingName] = useState(menteeName);
 
+  // Sidebar and Focus Mode State Redesign
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("de_sidebar_collapsed");
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const [lessonFocusMode, setLessonFocusMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("de_lesson_focus_mode");
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem("de_sidebar_collapsed", String(next));
+      return next;
+    });
+  };
+
+  const toggleLessonFocusMode = () => {
+    setLessonFocusMode(prev => {
+      const next = !prev;
+      localStorage.setItem("de_lesson_focus_mode", String(next));
+      return next;
+    });
+  };
+
   // Sync editing name when menteeName changes or on load
   useEffect(() => {
     setEditingName(menteeName);
@@ -212,19 +247,25 @@ export default function App() {
     }
   };
 
+  const isCurrentlyInLesson = route.mainView === "curriculum" && !!route.selectedDayId && route.subView?.type === "todo";
+  const isFocusActive = lessonFocusMode && isCurrentlyInLesson;
+
   return (
     <div className="min-h-screen flex flex-col bg-theme-bg text-theme-text font-sans selection:bg-teal-500 selection:text-slate-950 transition-colors duration-300">
       
       {/* 1. Global Prep Launch alert banner */}
-      <div className="bg-gradient-to-r from-theme-bg via-theme-accent-secondary/10 to-theme-bg px-4 py-2 text-center text-xs relative overflow-hidden flex items-center justify-center gap-2 border-b border-theme-border/30">
-        <Sparkles className="w-3.5 h-3.5 text-theme-accent-primary shrink-0 animate-bounce" />
-        <span className="font-mono text-theme-text/90 text-[10.5px]">
-          <strong>Transition Active:</strong> Translating Athila's 4-year Informatica IDMC expert base into a code-heavy modern DE portfolio.
-        </span>
-      </div>
+      {!isFocusActive && (
+        <div className="bg-gradient-to-r from-theme-bg via-theme-accent-secondary/10 to-theme-bg px-4 py-2 text-center text-xs relative overflow-hidden flex items-center justify-center gap-2 border-b border-theme-border/30">
+          <Sparkles className="w-3.5 h-3.5 text-theme-accent-primary shrink-0 animate-bounce" />
+          <span className="font-mono text-theme-text/90 text-[10.5px]">
+            <strong>Transition Active:</strong> Translating Athila's 4-year Informatica IDMC expert base into a code-heavy modern DE portfolio.
+          </span>
+        </div>
+      )}
 
       {/* 2. Global Professional Header Bar */}
-      <header className="bg-theme-card/85 backdrop-blur-sm border-b border-theme-border px-5 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-colors duration-300">
+      {!isFocusActive && (
+        <header className="bg-theme-card/85 backdrop-blur-sm border-b border-theme-border px-5 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-colors duration-300">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gradient-to-br from-theme-accent-secondary to-theme-accent-primary text-slate-950 rounded-xl flex items-center justify-center font-bold shrink-0 shadow-sm">
             <Zap className="w-4.5 h-4.5 text-slate-950" />
@@ -293,90 +334,175 @@ export default function App() {
 
         </div>
       </header>
+      )}
 
       {/* Grid layout container */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden w-full mx-auto">
         
-        {/* Left sidebar: Hidden on mobile, visible on desktop */}
-        <aside className="hidden lg:flex w-85 bg-theme-card/30 border-r border-theme-border flex-col shrink-0 overflow-hidden">
-          
-          {/* Executive SaaS View Selectors */}
-          <div className="p-4 border-b border-theme-border space-y-1.5 shrink-0">
-            <span className="text-[9px] font-mono uppercase bg-theme-bg text-theme-muted border border-theme-border/65 px-2.5 py-1 rounded font-bold block w-fit select-none">
-              Navigation Controls
-            </span>
-
-            <div className="grid grid-cols-1 gap-1 pt-1">
+        {/* Left sidebar: Hidden on mobile, collapsible on desktop */}
+        {!isFocusActive && (
+          <aside 
+            className={`hidden lg:flex flex-col bg-theme-card/30 border-r border-theme-border shrink-0 transition-all duration-300 overflow-hidden ${
+              sidebarCollapsed ? "w-16" : "w-80"
+            }`}
+          >
+            {/* Top Area: Sidebar Toggle Control */}
+            <div className={`p-4 border-b border-theme-border flex items-center justify-between ${sidebarCollapsed ? "flex-col gap-4 px-2" : "flex-row"}`}>
+              {!sidebarCollapsed && (
+                <div className="flex items-center gap-2 select-none">
+                  <div className="p-1.5 bg-gradient-to-br from-theme-accent-secondary to-theme-accent-primary text-slate-950 rounded-lg flex items-center justify-center font-bold">
+                    <Zap className="w-3.5 h-3.5 text-slate-950" />
+                  </div>
+                  <div>
+                    <span className="font-display font-black text-theme-text text-[11px] tracking-wide uppercase block">DE ACCELERATOR</span>
+                    <span className="text-[9px] text-theme-accent-primary font-mono select-none">PRO-TRACK</span>
+                  </div>
+                </div>
+              )}
+              
               <button
-                onClick={() => setRoute(prev => ({ ...prev, mainView: "dashboard" }))}
-                className={`px-3 py-2 rounded-xl text-left text-xs font-mono font-bold flex items-center gap-2 transition-all outline-none cursor-pointer border ${
-                  route.mainView === "dashboard"
-                    ? "bg-gradient-to-r from-theme-card to-theme-bg text-theme-accent-primary border-theme-border/80 shadow-sm font-black scale-[0.98]"
-                    : "hover:bg-theme-card/40 text-theme-muted hover:text-theme-text border-transparent"
-                }`}
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-lg border border-theme-border bg-theme-bg hover:bg-theme-hover text-theme-muted hover:text-theme-text cursor-pointer transition-colors"
+                title={sidebarCollapsed ? "Expand Navigation Panel" : "Collapse Navigation Panel"}
               >
-                <Home className="w-3.5 h-3.5" />
-                <span>Executive Dashboard</span>
+                {sidebarCollapsed ? (
+                  <ChevronRight className="w-3.5 h-3.5 text-theme-accent-primary" />
+                ) : (
+                  <ChevronLeft className="w-3.5 h-3.5 text-theme-accent-primary" />
+                )}
+              </button>
+            </div>
+
+            {/* Main Menu Navigation Links */}
+            <div className="p-3 space-y-1.5 border-b border-theme-border select-none">
+              {!sidebarCollapsed && (
+                <span className="text-[9px] font-mono uppercase bg-theme-bg/60 text-theme-muted border border-theme-border px-2 py-0.5 rounded font-bold block w-fit mb-2">
+                  Navigation
+                </span>
+              )}
+
+              {/* Dashboard */}
+              <button
+                onClick={() => setRoute({ mainView: "dashboard", selectedDayId: route.selectedDayId, subView: route.subView })}
+                className={`w-full py-2.5 rounded-xl font-sans text-xs font-bold flex items-center transition-all cursor-pointer border ${
+                  route.mainView === "dashboard"
+                    ? "bg-theme-bg text-theme-accent-primary border-theme-border shadow-sm font-black scale-[0.98]"
+                    : "hover:bg-theme-card text-theme-muted hover:text-theme-text border-transparent"
+                } ${sidebarCollapsed ? "justify-center px-1" : "px-3.5 gap-2.5 text-left"}`}
+                title="Executive Dashboard"
+              >
+                <Home className="w-4 h-4 shrink-0" />
+                {!sidebarCollapsed && <span>Executive Dashboard</span>}
               </button>
 
+              {/* Curriculum */}
               <button
-                onClick={() => setRoute({ mainView: "curriculum", selectedDayId: "", subView: { type: "list" } })}
-                className={`px-3 py-2 rounded-xl text-left text-xs font-mono font-bold flex items-center justify-between transition-all border outline-none cursor-pointer ${
+                onClick={() => setRoute({ mainView: "curriculum", selectedDayId: route.selectedDayId || "W1-D1", subView: route.subView })}
+                className={`w-full py-2.5 rounded-xl font-sans text-xs font-bold flex items-center justify-between transition-all cursor-pointer border ${
                   route.mainView === "curriculum"
-                    ? "bg-gradient-to-r from-theme-card to-theme-bg text-theme-accent-primary border-theme-border/80 shadow-sm font-black scale-[0.98]"
-                    : "hover:bg-theme-card/40 text-theme-muted hover:text-theme-text border-transparent"
-                }`}
+                    ? "bg-theme-bg text-theme-accent-primary border-theme-border shadow-sm font-black scale-[0.98]"
+                    : "hover:bg-theme-card text-theme-muted hover:text-theme-text border-transparent"
+                } ${sidebarCollapsed ? "justify-center px-1" : "px-3.5 text-left"}`}
+                title="Syllabus Curriculum"
               >
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>Syllabus Curriculum</span>
+                <div className={`flex items-center ${sidebarCollapsed ? "gap-0" : "gap-2.5"}`}>
+                  <BookOpen className="w-4 h-4 shrink-0" />
+                  {!sidebarCollapsed && <span>Syllabus Curriculum</span>}
                 </div>
-                {route.selectedDayId && (
-                  <span className="bg-theme-bg text-theme-accent-secondary px-1.5 py-0.5 rounded text-[8px] border border-theme-border/40 font-bold uppercase">
+                {!sidebarCollapsed && route.selectedDayId && (
+                  <span className="bg-theme-bg text-theme-accent-secondary px-1.5 py-0.5 rounded text-[8px] border border-theme-border/50 font-bold font-mono">
                     {route.selectedDayId}
                   </span>
                 )}
               </button>
 
+              {/* Calendar */}
               <button
-                onClick={() => setRoute(prev => ({ ...prev, mainView: "assessments" }))}
-                className={`px-3 py-2 rounded-xl text-left text-xs font-mono font-bold flex items-center gap-2 transition-all outline-none cursor-pointer border ${
-                  route.mainView === "assessments"
-                    ? "bg-gradient-to-r from-theme-card to-theme-bg text-theme-accent-primary border-theme-border/80 shadow-sm font-black scale-[0.98]"
-                    : "hover:bg-theme-card/40 text-theme-muted hover:text-theme-text border-transparent"
-                }`}
+                onClick={() => setRoute({ mainView: "calendar", selectedDayId: route.selectedDayId, subView: route.subView })}
+                className={`w-full py-2.5 rounded-xl font-sans text-xs font-bold flex items-center transition-all cursor-pointer border ${
+                  route.mainView === "calendar"
+                    ? "bg-theme-bg text-theme-accent-primary border-theme-border shadow-sm font-black scale-[0.98]"
+                    : "hover:bg-theme-card text-theme-muted hover:text-theme-text border-transparent"
+                } ${sidebarCollapsed ? "justify-center px-1" : "px-3.5 gap-2.5 text-left"}`}
+                title="Sprint Calendar"
               >
-                <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Assessment Center</span>
+                <Calendar className="w-4 h-4 shrink-0" />
+                {!sidebarCollapsed && <span>Sprint Calendar</span>}
               </button>
 
+              {/* Assessments */}
               <button
-                onClick={() => setRoute(prev => ({ ...prev, mainView: "trainer" }))}
-                className={`px-3 py-2 rounded-xl text-left text-xs font-mono font-bold flex items-center gap-2 transition-all outline-none cursor-pointer border ${
-                  route.mainView === "trainer"
-                    ? "bg-gradient-to-r from-theme-card to-theme-bg text-theme-accent-primary border-theme-border/80 shadow-sm font-black scale-[0.98]"
-                    : "hover:bg-theme-card/40 text-theme-muted hover:text-theme-text border-transparent"
-                }`}
+                onClick={() => setRoute({ mainView: "assessments", selectedDayId: route.selectedDayId, subView: route.subView })}
+                className={`w-full py-2.5 rounded-xl font-sans text-xs font-bold flex items-center transition-all cursor-pointer border ${
+                  route.mainView === "assessments"
+                    ? "bg-theme-bg text-theme-accent-primary border-theme-border shadow-sm font-black scale-[0.98]"
+                    : "hover:bg-theme-card text-theme-muted hover:text-theme-text border-transparent"
+                } ${sidebarCollapsed ? "justify-center px-1" : "px-3.5 gap-2.5 text-left"}`}
+                title="Assessment Center"
               >
-                <ClipboardCheck className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                <span>Trainer control hub</span>
+                <GraduationCap className="w-4 h-4 shrink-0" />
+                {!sidebarCollapsed && <span>Assessment Center</span>}
+              </button>
+
+              {/* Trainer Portal */}
+              <button
+                onClick={() => setRoute({ mainView: "trainer", selectedDayId: route.selectedDayId, subView: route.subView })}
+                className={`w-full py-2.5 rounded-xl font-sans text-xs font-bold flex items-center transition-all cursor-pointer border ${
+                  route.mainView === "trainer"
+                    ? "bg-theme-bg text-theme-accent-primary border-theme-border shadow-sm font-black scale-[0.98]"
+                    : "hover:bg-theme-card text-theme-muted hover:text-theme-text border-transparent"
+                } ${sidebarCollapsed ? "justify-center px-1" : "px-3.5 gap-2.5 text-left"}`}
+                title="Trainer Control Hub"
+              >
+                <ClipboardCheck className="w-4 h-4 shrink-0" />
+                {!sidebarCollapsed && <span>Trainer Control Hub</span>}
+              </button>
+
+              {/* Progress (Modal opener) */}
+              <button
+                onClick={() => setIsProgressOpen(true)}
+                className={`w-full py-2.5 rounded-xl font-sans text-xs font-bold flex items-center transition-all cursor-pointer border hover:bg-theme-card text-theme-muted hover:text-theme-text border-transparent ${
+                  sidebarCollapsed ? "justify-center px-1" : "px-3.5 gap-2.5 text-left"
+                }`}
+                title="Progression Diagnostics"
+              >
+                <Activity className="w-4 h-4 text-emerald-400 shrink-0" />
+                {!sidebarCollapsed && <span>Progression Stats</span>}
+              </button>
+
+              {/* Settings (Modal opener) */}
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className={`w-full py-2.5 rounded-xl font-sans text-xs font-bold flex items-center transition-all cursor-pointer border hover:bg-theme-card text-theme-muted hover:text-theme-text border-transparent ${
+                  sidebarCollapsed ? "justify-center px-1" : "px-3.5 gap-2.5 text-left"
+                }`}
+                title="Profile Settings"
+              >
+                <User className="w-4 h-4 text-theme-accent-secondary shrink-0" />
+                {!sidebarCollapsed && <span>Profile Settings</span>}
               </button>
             </div>
-          </div>
 
-          {/* Core syllabus navigation list */}
-          <div className="flex-1 overflow-hidden">
-            <SidebarRoadmap 
-              curriculum={curriculum}
-              activeDayId={route.selectedDayId}
-              onSelectDay={handleSelectDay}
-              completedDays={completedDays}
-            />
-          </div>
-        </aside>
+            {/* Active syllabus roadmap items: Hidden when nav is collapsed to focus views */}
+            {!sidebarCollapsed && (
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <SidebarRoadmap 
+                  curriculum={curriculum}
+                  activeDayId={route.selectedDayId}
+                  onSelectDay={handleSelectDay}
+                  completedDays={completedDays}
+                />
+              </div>
+            )}
+          </aside>
+        )}
 
         {/* Central main viewport */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto space-y-6 pb-24 lg:pb-8 lg:h-[calc(100vh-80px)] bg-theme-bg text-theme-text transition-colors duration-300">
+        <main className={`flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto space-y-6 pb-24 lg:pb-8 bg-theme-bg text-theme-text transition-all duration-300 ${
+          isFocusActive 
+            ? "lg:h-screen lg:max-w-[960px] mx-auto py-12 px-6" 
+            : "lg:h-[calc(100vh-80px)]"
+        }`}>
           
           {route.mainView === "dashboard" && (
             <DashboardPage 
@@ -427,6 +553,13 @@ export default function App() {
                     progressHook.handleUpdateChallengeStatus(dayId, status);
                   }
                 }}
+                lessonFocusMode={lessonFocusMode}
+                onToggleFocusMode={toggleLessonFocusMode}
+                onNavigateToChallengeDay={(dayId) => setRoute({
+                  mainView: "curriculum",
+                  selectedDayId: dayId,
+                  subView: { type: "challenge" }
+                })}
               />
             ) : (
               <CurriculumPage 
@@ -478,67 +611,69 @@ export default function App() {
       </div>
 
       {/* 3. Mobile Sticky Bottom Navigation Bar (Visible only on mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-theme-card border-t border-theme-border/90 flex justify-between items-center px-2 py-1.5 text-theme-muted lg:hidden pb-safe font-sans">
-        <button
-          onClick={() => setRoute({ mainView: "dashboard", selectedDayId: route.selectedDayId, subView: { type: "list" } })}
-          className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
-            route.mainView === "dashboard" ? "text-theme-accent-primary font-bold animate-pulse" : "hover:text-theme-text"
-          }`}
-        >
-          <Home className="w-4 h-4" />
-          <span className="text-[9px] font-mono uppercase font-bold">Home</span>
-        </button>
+      {!isFocusActive && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-theme-card border-t border-theme-border/90 flex justify-between items-center px-2 py-1.5 text-theme-muted lg:hidden pb-safe font-sans">
+          <button
+            onClick={() => setRoute({ mainView: "dashboard", selectedDayId: route.selectedDayId, subView: { type: "list" } })}
+            className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
+              route.mainView === "dashboard" ? "text-theme-accent-primary font-bold animate-pulse" : "hover:text-theme-text"
+            }`}
+          >
+            <Home className="w-4 h-4" />
+            <span className="text-[9px] font-mono uppercase font-bold">Home</span>
+          </button>
 
-        <button
-          onClick={() => setRoute({ mainView: "curriculum", selectedDayId: "", subView: { type: "list" } })}
-          className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
-            route.mainView === "curriculum" && !route.selectedDayId ? "text-theme-accent-primary font-bold" : "hover:text-theme-text"
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span className="text-[9px] font-mono uppercase font-bold text-center">Study</span>
-        </button>
+          <button
+            onClick={() => setRoute({ mainView: "curriculum", selectedDayId: "", subView: { type: "list" } })}
+            className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
+              route.mainView === "curriculum" && !route.selectedDayId ? "text-theme-accent-primary font-bold" : "hover:text-theme-text"
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span className="text-[9px] font-mono uppercase font-bold text-center">Study</span>
+          </button>
 
-        <button
-          onClick={() => {
-            setRoute({ mainView: "assessments", selectedDayId: "", subView: { type: "list" } });
-          }}
-          className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
-            route.mainView === "assessments" ? "text-theme-accent-secondary font-bold" : "hover:text-theme-text"
-          }`}
-        >
-          <GraduationCap className="w-4 h-4 text-indigo-400" />
-          <span className="text-[9px] font-mono uppercase font-bold">Quiz</span>
-        </button>
+          <button
+            onClick={() => {
+              setRoute({ mainView: "assessments", selectedDayId: "", subView: { type: "list" } });
+            }}
+            className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
+              route.mainView === "assessments" ? "text-theme-accent-secondary font-bold" : "hover:text-theme-text"
+            }`}
+          >
+            <GraduationCap className="w-4 h-4 text-indigo-400" />
+            <span className="text-[9px] font-mono uppercase font-bold">Quiz</span>
+          </button>
 
-        <button
-          onClick={() => {
-            setRoute({ mainView: "trainer", selectedDayId: "", subView: { type: "list" } });
-          }}
-          className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
-            route.mainView === "trainer" ? "text-amber-500 font-bold" : "hover:text-theme-text"
-          }`}
-        >
-          <ClipboardCheck className="w-4 h-4 text-amber-500" />
-          <span className="text-[9px] font-mono uppercase font-bold">Trainer</span>
-        </button>
+          <button
+            onClick={() => {
+              setRoute({ mainView: "trainer", selectedDayId: "", subView: { type: "list" } });
+            }}
+            className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
+              route.mainView === "trainer" ? "text-amber-500 font-bold" : "hover:text-theme-text"
+            }`}
+          >
+            <ClipboardCheck className="w-4 h-4 text-amber-500" />
+            <span className="text-[9px] font-mono uppercase font-bold">Trainer</span>
+          </button>
 
-        <button
-          onClick={() => setIsProgressOpen(true)}
-          className="flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors hover:text-theme-text"
-        >
-          <Activity className="w-4 h-4 text-emerald-500 shrink-0" />
-          <span className="text-[9px] font-mono uppercase font-bold text-emerald-500">Stats</span>
-        </button>
+          <button
+            onClick={() => setIsProgressOpen(true)}
+            className="flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors hover:text-theme-text"
+          >
+            <Activity className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="text-[9px] font-mono uppercase font-bold text-emerald-500">Stats</span>
+          </button>
 
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className="flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors hover:text-theme-text"
-        >
-          <UserCheck className="w-4 h-4 text-theme-accent-primary" />
-          <span className="text-[9px] font-mono uppercase font-bold text-theme-accent-primary">Profile</span>
-        </button>
-      </nav>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors hover:text-theme-text"
+          >
+            <UserCheck className="w-4 h-4 text-theme-accent-primary" />
+            <span className="text-[9px] font-mono uppercase font-bold text-theme-accent-primary">Profile</span>
+          </button>
+        </nav>
+      )}
 
       {/* 4. Settings slide-over/modal */}
       {isSettingsOpen && (

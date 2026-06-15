@@ -1,6 +1,7 @@
 import express from "express";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import { Resend } from "resend";
 
 dotenv.config();
 
@@ -209,6 +210,75 @@ app.post("/api/coach/chat", async (req, res) => {
   } catch (error: any) {
     console.error("Error in /api/coach/chat:", error);
     res.status(500).json({ error: error.message || "Failed to process message" });
+  }
+});
+
+// Endpoint 4: Direct Email Reminder API
+app.post("/api/coach/reminder", async (req, res) => {
+  try {
+    const { to = "athilavp@gmail.com", pendingCount = 0, progressPercent = 0, nextLessonTitle = "" } = req.body;
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const subject = "Today's Learning Session Awaits 🚀";
+    
+    const htmlBody = `
+      <div style="font-family: inherit, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e5e0; border-radius: 16px; background-color: #fafaf8; color: #171717;">
+        <h2 style="color: #4f46e5; font-size: 20px; font-weight: 800; margin-bottom: 16px; font-family: 'Fira Sans', sans-serif;">Today's Learning Session Awaits 🚀</h2>
+        <p style="font-size: 14px; line-height: 1.6; margin-bottom: 12px; font-family: 'Fira Sans', sans-serif;">Hello Athila,</p>
+        <p style="font-size: 14px; line-height: 1.6; margin-bottom: 16px; font-family: 'Fira Sans', sans-serif;">You have learning tasks scheduled today.</p>
+        
+        <div style="background-color: #ffffff; padding: 18px; border-left: 4px solid #4f46e5; border-radius: 8px; margin: 20px 0; border-top: 1px solid #e5e5e0; border-right: 1px solid #e5e5e0; border-bottom: 1px solid #e5e5e0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: 'Fira Sans', sans-serif;">
+          <p style="margin: 0 0 10px 0; font-weight: bold; color: #171717; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Your Roadmap Insights Today:</p>
+          <ul style="margin: 0; padding-left: 20px; color: #44403c; font-size: 14px; line-height: 1.6;">
+            <li style="margin-bottom: 6px;"><strong>Pending tasks count:</strong> <span style="color: #dc2626; font-weight: 700;">${pendingCount} units</span> remaining</li>
+            <li style="margin-bottom: 6px;"><strong>Current progress:</strong> ${progressPercent}% accomplished</li>
+            <li style="margin-bottom: 4px;"><strong>Recommended Next Lesson:</strong> <span style="color: #4f46e5; font-weight: 600;">${nextLessonTitle || "Core SQL/Python Unit"}</span></li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 14px; line-height: 1.6; margin-top: 16px; font-family: 'Fira Sans', sans-serif;">Open your learning portal and complete today's lessons.</p>
+        <p style="font-size: 14px; line-height: 1.6; font-weight: 500; color: #44403c; font-family: 'Fira Sans', sans-serif;">Keep building momentum toward your Data Engineering goal.</p>
+        
+        <div style="margin-top: 32px; border-top: 1px solid #e5e5e0; padding-top: 16px; font-size: 13px; color: #78716c; line-height: 1.5; font-family: 'Fira Sans', sans-serif;">
+          Warmly,<br />
+          <strong style="color: #1c1917;">Hariprasad</strong><br />
+          Elite DE Career Advisor
+        </div>
+      </div>
+    `;
+
+    if (!resendApiKey || resendApiKey === "MY_RESEND_API_KEY" || resendApiKey.trim() === "") {
+      return res.json({
+        success: true,
+        simulated: true,
+        message: "Email composed and logged (Sandbox Fallback Mode). Configure process.env.RESEND_API_KEY for live delivery!",
+        subject,
+        to,
+        body: htmlBody
+      });
+    }
+
+    const resend = new Resend(resendApiKey);
+    const { data, error } = await resend.emails.send({
+      from: 'DE Mentor <onboarding@resend.dev>',
+      to: [to],
+      subject: subject,
+      html: htmlBody,
+    });
+
+    if (error) {
+      console.error("Resend delivery failed:", error);
+      return res.status(400).json({ success: false, error: (error as any).message });
+    }
+
+    res.json({
+      success: true,
+      simulated: false,
+      message: "Live Email sent successfully via Resend!",
+      data
+    });
+  } catch (error: any) {
+    console.error("Error in /api/coach/reminder route:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to dispatch email reminder" });
   }
 });
 
