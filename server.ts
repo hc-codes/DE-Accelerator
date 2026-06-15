@@ -305,11 +305,16 @@ app.post("/api/prep/analyze", async (req, res) => {
       return res.status(500).json({ success: false, error: "GEMINI_API_KEY is not configured." });
     }
 
-    const prompt = `Analyze this Job Description for a ${role} at ${company} (Experience: ${yoe} years). Focus areas: ${focusAreas || "None"}.
-    Extract skills and categorize them. Return JSON ONLY with this exact structure:
+    const roleText = role ? `for a ${role}` : "for the appropriate role";
+    const companyText = company ? `at ${company}` : "";
+    const yoeText = yoe ? `(Experience: ${yoe} years)` : "";
+
+    const prompt = `Analyze this Job Description ${roleText} ${companyText} ${yoeText}. Focus areas: ${focusAreas || "None"}.
+    Extract skills and categorize them. If the role or company is not provided in context, infer them from the Job Description.
+    Return JSON ONLY with this exact structure:
     {
-      "role": "${role}",
-      "company": "${company}",
+      "role": "${role || "<inferred role>"}",
+      "company": "${company || "<inferred company>"}",
       "mustHave": ["skill1", "skill2"],
       "goodToHave": ["skill3"],
       "bonus": ["skill4"],
@@ -353,10 +358,25 @@ app.post("/api/prep/interview", async (req, res) => {
       "Ask a coding, algorithm, or system design problem where the candidate needs to provide code or a structured technical architecture." :
       "Ask a short, focused conceptual or experiential question.";
 
-    const transcript = history.map((m: any) => `${m.role === 'user' ? 'Candidate' : 'Interviewer'}: ${m.content}`).join('\n');
+    const transcript = history.length > 0 ? history.map((m: any) => `${m.role === 'user' ? 'Candidate' : 'Interviewer'}: ${m.content}`).join('\n') : "NO TRANSCRIPT YET - THIS IS THE FIRST QUESTION";
+
+    const isFirstQuestion = history.length === 0;
+
+    const evaluationInstruction = isFirstQuestion ? 
+      "1. Since this is the first turn and there is no transcript, DO NOT evaluate any answer. Return null for evaluation." :
+      "1. Evaluate the candidate's last answer. Generate a short feedback, a score out of 10, an ideal answer overview, and a list of gaps missed.";
+
+    const evaluationJsonType = isFirstQuestion ? 
+      `"evaluation": null,` :
+      `"evaluation": {
+        "score": number,
+        "feedback": "string",
+        "idealAnswer": "string",
+        "gaps": ["string"]
+      },`;
 
     const prompt = `You are a Principal Software Engineer conducting a senior-level mock interview for a ${analysisResult.role} at ${analysisResult.company}.
-    You are evaluating the candidate's knowledge across: Must Have (${analysisResult.mustHave.join(', ')}), Good to Have, and Bonus skills.
+    You are evaluating the candidate's knowledge across: Must Have (${analysisResult.mustHave?.join(', ')}), Good to Have, and Bonus skills.
     
     Interview Mode: ${mode}
     Instruction for next question: ${modeInstruction}
@@ -365,21 +385,15 @@ app.post("/api/prep/interview", async (req, res) => {
     ${transcript}
 
     Your task is to:
-    1. Evaluate the candidate's last answer. Generate a short feedback, a score out of 10, an ideal answer overview, and a list of gaps missed.
+    ${evaluationInstruction}
     2. Decide on the NEXT question to ask to probe another skill or go deeper, strictly adhering to the "Instruction for next question" above.
     3. Update the competency matrix across relevant skills (out of 10). If a skill hasn't been tested, don't include it.
-    4. Provide the exact next Question that you want to ask. The next question should be your EXACT direct words asking the candidate the prompt (e.g. "Okay, let's move on. Imagine you have a...").
+    4. Provide the exact next Question that you want to ask. The next question should be your EXACT direct words asking the candidate the prompt (e.g. "To start, imagine you have a...").
 
     Return JSON ONLY:
     {
-      "evaluation": {
-        "score": number,
-        "feedback": "string",
-        "idealAnswer": "string",
-        "gaps": ["string"]
-      },
-      "nextQuestion": "string",
-      "updatedCompetency": { "SkillName": 7 }
+      ${evaluationJsonType}
+      "nextQuestion": "string"
     }
     `;
 

@@ -65,7 +65,7 @@ export function QuickPrepPage() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-theme-muted mb-1.5 uppercase font-mono">Company Name</label>
+                <label className="block text-xs font-bold text-theme-muted mb-1.5 uppercase font-mono">Company Name (Optional)</label>
                 <div className="relative">
                   <Building className="absolute left-3 top-2.5 w-4 h-4 text-theme-muted" />
                   <input type="text" value={company} onChange={e => setCompany(e.target.value)} placeholder="e.g. Google, Stripe" className="w-full bg-theme-bg border border-theme-border rounded-lg pl-9 pr-3 py-2 text-sm text-theme-text focus:border-theme-accent-primary focus:ring-1 focus:ring-theme-accent-primary transition-all outline-none" />
@@ -73,7 +73,7 @@ export function QuickPrepPage() {
               </div>
               
               <div>
-                <label className="block text-xs font-bold text-theme-muted mb-1.5 uppercase font-mono">Target Role</label>
+                <label className="block text-xs font-bold text-theme-muted mb-1.5 uppercase font-mono">Target Role (Optional)</label>
                 <div className="relative">
                   <Code2 className="absolute left-3 top-2.5 w-4 h-4 text-theme-muted" />
                   <input type="text" value={role} onChange={e => setRole(e.target.value)} placeholder="e.g. Senior Software Engineer" className="w-full bg-theme-bg border border-theme-border rounded-lg pl-9 pr-3 py-2 text-sm text-theme-text focus:border-theme-accent-primary focus:ring-1 focus:ring-theme-accent-primary transition-all outline-none" />
@@ -81,7 +81,7 @@ export function QuickPrepPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-theme-muted mb-1.5 uppercase font-mono">Years of Experience</label>
+                <label className="block text-xs font-bold text-theme-muted mb-1.5 uppercase font-mono">Years of Experience (Optional)</label>
                 <input type="number" value={yoe} onChange={e => setYoe(e.target.value)} placeholder="e.g. 5" className="w-full bg-theme-bg border border-theme-border rounded-lg px-3 py-2 text-sm text-theme-text focus:border-theme-accent-primary focus:ring-1 focus:ring-theme-accent-primary transition-all outline-none" />
               </div>
 
@@ -234,13 +234,44 @@ function KnowledgeCheckMode({ analysisResult, onBack }: { analysisResult: any, o
 }
 
 function ActiveInterviewMode({ analysisResult, onBack, mode }: { analysisResult: any, onBack: () => void, mode: "mcq" | "coding" | "short" }) {
-  const [messages, setMessages] = useState<{role: "assistant" | "user", content: string, evaluation?: any}[]>([{
-    role: "assistant",
-    content: `Welcome to your mock interview for the ${analysisResult.role} position at ${analysisResult.company}. I will be assessing your knowledge across various dimensions. We will keep going until you decide to stop. Are you ready for the first question?`
-  }]);
+  const [messages, setMessages] = useState<{role: "assistant" | "user", content: string, evaluation?: any}[]>([]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [competencyMatrix, setCompetencyMatrix] = useState<Record<string, number>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    // Fetch first question immediately based on the selected mode
+    const fetchFirstQuestion = async () => {
+      try {
+        const response = await fetch("/api/prep/interview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            analysisResult,
+            history: [],
+            mode
+          })
+        });
+        const data = await response.json();
+        if (data.success) {
+          setMessages([{
+            role: "assistant",
+            content: data.nextQuestion,
+            evaluation: data.evaluation
+          }]);
+        } else {
+          alert("Error: " + data.error);
+          onBack();
+        }
+      } catch (e: any) {
+        console.error(e);
+        alert("Failed to connect: " + e.message);
+        onBack();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchFirstQuestion();
+  }, [analysisResult, mode]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -256,7 +287,6 @@ function ActiveInterviewMode({ analysisResult, onBack, mode }: { analysisResult:
         body: JSON.stringify({
           analysisResult,
           history: messages.concat(userMessage),
-          currentCompetency: competencyMatrix,
           mode
         })
       });
@@ -267,9 +297,6 @@ function ActiveInterviewMode({ analysisResult, onBack, mode }: { analysisResult:
           content: data.nextQuestion,
           evaluation: data.evaluation
         }]);
-        if (data.updatedCompetency) {
-          setCompetencyMatrix(data.updatedCompetency);
-        }
       } else {
         alert("Error: " + data.error);
         setMessages(prev => prev.slice(0, -1)); // rollback
