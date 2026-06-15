@@ -1,7 +1,7 @@
 import express from "express";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
@@ -217,7 +217,8 @@ app.post("/api/coach/chat", async (req, res) => {
 app.post("/api/coach/reminder", async (req, res) => {
   try {
     const { to = "athilavp@gmail.com", pendingCount = 0, progressPercent = 0, nextLessonTitle = "" } = req.body;
-    const resendApiKey = process.env.RESEND_API_KEY;
+    const gmailUser = "haripc525@gmail.com";
+    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
     const subject = "Today's Learning Session Awaits 🚀";
     
     const htmlBody = `
@@ -246,35 +247,37 @@ app.post("/api/coach/reminder", async (req, res) => {
       </div>
     `;
 
-    if (!resendApiKey || resendApiKey === "MY_RESEND_API_KEY" || resendApiKey.trim() === "") {
+    if (!gmailAppPassword || gmailAppPassword === "MY_GMAIL_APP_PASSWORD" || gmailAppPassword.trim() === "") {
       return res.json({
         success: true,
         simulated: true,
-        message: "Email composed and logged (Sandbox Fallback Mode). Configure process.env.RESEND_API_KEY for live delivery!",
+        message: "Email composed and logged (Sandbox Mode). Add your GMAIL_APP_PASSWORD to secrets!",
         subject,
         to,
         body: htmlBody
       });
     }
 
-    const resend = new Resend(resendApiKey);
-    const { data, error } = await resend.emails.send({
-      from: 'DE Mentor <onboarding@resend.dev>',
-      to: [to],
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailAppPassword
+      }
+    });
+
+    const info = await transporter.sendMail({
+      from: \`"DE Mentor" <\${gmailUser}>\`,
+      to: to,
       subject: subject,
       html: htmlBody,
     });
 
-    if (error) {
-      console.error("Resend delivery failed:", error);
-      return res.status(400).json({ success: false, error: (error as any).message });
-    }
-
     res.json({
       success: true,
       simulated: false,
-      message: "Live Email sent successfully via Resend!",
-      data
+      message: "Live Email sent successfully via Gmail!",
+      data: info
     });
   } catch (error: any) {
     console.error("Error in /api/coach/reminder route:", error);

@@ -594,7 +594,7 @@ export function DashboardPage({
                 <p className="text-theme-text font-bold text-xs truncate">athilavp@gmail.com</p>
                 <div className="flex items-center gap-1 font-mono text-[9px] text-theme-muted pt-0.5">
                   <Clock className="w-3 h-3 text-theme-accent-primary" />
-                  <span>Daily at 8:45 PM IST</span>
+                  <span>Daily at 8:56 PM IST</span>
                 </div>
               </div>
 
