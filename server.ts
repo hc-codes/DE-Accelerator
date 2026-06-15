@@ -73,7 +73,7 @@ Remember to use her Informatica experience as a supportive bridge, reminding her
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         systemInstruction: COACH_SYSTEM_INSTRUCTION,
@@ -144,7 +144,7 @@ Please audit her solution code.
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         systemInstruction: COACH_SYSTEM_INSTRUCTION,
@@ -204,7 +204,7 @@ app.post("/api/coach/chat", async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       contents: formattedContents,
       config: {
         systemInstruction: COACH_SYSTEM_INSTRUCTION + `\nAlways respond in markdown, maintaining a supportive, warm, expert-engineer coaching persona. Boost her morale and reference Informatica counterparts dynamically.`,
@@ -327,7 +327,7 @@ app.post("/api/prep/analyze", async (req, res) => {
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -335,7 +335,11 @@ app.post("/api/prep/analyze", async (req, res) => {
     });
 
     let text = response.text || "";
-    text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "").trim();
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      text = text.slice(firstBrace, lastBrace + 1);
+    }
     
     res.json({ success: true, analysis: JSON.parse(text) });
   } catch (error: any) {
@@ -397,7 +401,7 @@ app.post("/api/prep/interview", async (req, res) => {
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -405,7 +409,11 @@ app.post("/api/prep/interview", async (req, res) => {
     });
 
     let text = response.text || "";
-    text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "").trim();
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      text = text.slice(firstBrace, lastBrace + 1);
+    }
     const data = JSON.parse(text);
     res.json({ success: true, ...data });
   } catch (error: any) {
@@ -436,7 +444,7 @@ app.post("/api/prep/learn", async (req, res) => {
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -444,7 +452,11 @@ app.post("/api/prep/learn", async (req, res) => {
     });
 
     let text = response.text || "";
-    text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "").trim();
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      text = text.slice(firstBrace, lastBrace + 1);
+    }
     res.json({ success: true, content: JSON.parse(text) });
   } catch (error: any) {
     console.error(error);
