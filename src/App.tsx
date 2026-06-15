@@ -18,6 +18,7 @@ import { DayDetailPage } from "./features/curriculum/DayDetailPage";
 import { CalendarComponent } from "./features/calendar/CalendarComponent";
 import { AssessmentCenterPage } from "./features/assessments/AssessmentCenterPage";
 import { TrainerPage } from "./features/trainer/TrainerPage";
+import { QuickPrepPage } from "./features/prep/QuickPrepPage";
 
 export default function App() {
   const progressHook = useProgress();
@@ -57,7 +58,6 @@ export default function App() {
 
   // Mobile specific modals
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isProgressOpen, setIsProgressOpen] = useState(false);
   const [editingName, setEditingName] = useState(menteeName);
 
   // Sidebar and Focus Mode State Redesign
@@ -458,16 +458,16 @@ export default function App() {
                 {!sidebarCollapsed && <span>Trainer Control Hub</span>}
               </button>
 
-              {/* Progress (Modal opener) */}
+              {/* Quick Interview Prep */}
               <button
-                onClick={() => setIsProgressOpen(true)}
+                onClick={() => setRoute({ mainView: "prep", selectedDayId: route.selectedDayId, subView: route.subView })}
                 className={`w-full py-2.5 rounded-xl font-sans text-xs font-bold flex items-center transition-all cursor-pointer border hover:bg-theme-card text-theme-muted hover:text-theme-text border-transparent ${
                   sidebarCollapsed ? "justify-center px-1" : "px-3.5 gap-2.5 text-left"
                 }`}
-                title="Progression Diagnostics"
+                title="Quick Interview Prep"
               >
                 <Activity className="w-4 h-4 text-emerald-400 shrink-0" />
-                {!sidebarCollapsed && <span>Progression Stats</span>}
+                {!sidebarCollapsed && <span>Quick Interview Prep</span>}
               </button>
 
               {/* Settings (Modal opener) */}
@@ -581,6 +581,10 @@ export default function App() {
             />
           )}
 
+          {route.mainView === "prep" && (
+            <QuickPrepPage />
+          )}
+
           {route.mainView === "assessments" && (
             <AssessmentCenterPage 
               curriculum={curriculum}
@@ -658,11 +662,13 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setIsProgressOpen(true)}
-            className="flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors hover:text-theme-text"
+            onClick={() => setRoute({ mainView: "prep", selectedDayId: "", subView: { type: "list" } })}
+            className={`flex flex-col items-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
+              route.mainView === "prep" ? "text-emerald-400 font-bold" : "hover:text-theme-text"
+            }`}
           >
-            <Activity className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span className="text-[9px] font-mono uppercase font-bold text-emerald-500">Stats</span>
+            <Activity className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-[9px] font-mono uppercase font-bold">Prep</span>
           </button>
 
           <button
@@ -773,94 +779,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 5. Progress Stats slide-over/modal */}
-      {isProgressOpen && (
-        <div className="fixed inset-0 z-50 bg-theme-bg/85 backdrop-blur-sm flex items-center justify-center p-4 min-h-screen">
-          <div className="bg-theme-card border border-theme-border rounded-2xl w-full max-w-sm max-h-[85vh] overflow-y-auto shadow-2xl animate-fade-in p-5 space-y-5">
-            <div className="flex justify-between items-center border-b border-theme-border/60 pb-3 select-none">
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-theme-accent-primary animate-pulse" />
-                <h4 className="font-display font-black text-theme-text text-sm uppercase tracking-wide">
-                  Milestone Progress Diagnostics
-                </h4>
-              </div>
-              <button 
-                onClick={() => setIsProgressOpen(false)}
-                className="p-1 px-2.5 rounded bg-theme-bg border border-theme-border text-theme-muted hover:text-theme-text text-xs cursor-pointer font-bold"
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="space-y-4 font-sans text-xs">
-              
-              {/* Score card metrics */}
-              <div className="grid grid-cols-2 gap-3 select-none">
-                <div className="bg-theme-bg border border-theme-border rounded-xl p-3 text-center space-y-1">
-                  <div className="text-[10px] font-mono text-theme-muted uppercase">READINESS STATUS:</div>
-                  <div className="text-xl font-display font-black text-theme-accent-primary">{readinessScore}%</div>
-                  <div className="text-[9px] text-slate-500 font-mono">Industry Ready</div>
-                </div>
-
-                <div className="bg-theme-bg border border-theme-border rounded-xl p-3 text-center space-y-1">
-                  <div className="text-[10px] font-mono text-theme-muted uppercase">ACTIVE STREAK:</div>
-                  <div className="text-xl font-display font-black text-amber-500">🔥 {streakDays} days</div>
-                  <div className="text-[9px] text-slate-500 font-mono font-medium">Daily Drill Commits</div>
-                </div>
-              </div>
-
-              {/* Global Progress bar */}
-              <div className="bg-theme-bg/60 border border-theme-border p-3.5 rounded-xl space-y-1.5 select-none">
-                <div className="flex justify-between items-center text-[10px] font-mono text-theme-muted">
-                  <span>TOTAL CURRICULUM DRILLS</span>
-                  <span className="font-bold text-theme-text">{completedUnitsCount} / {curriculum.flatMap(w=>w.days).length} Completed</span>
-                </div>
-                <div className="w-full h-2 bg-theme-hover rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-theme-accent-secondary to-theme-accent-primary transition-all duration-300"
-                    style={{ width: `${overallProgressPercent}%` }}
-                  />
-                </div>
-                <div className="text-[9px] text-slate-500 font-mono text-right pt-0.5">
-                  {curriculum.flatMap(w=>w.days).length - completedUnitsCount} drill units remaining
-                </div>
-              </div>
-
-              {/* Feed logs */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-mono uppercase text-theme-muted font-bold block select-none">
-                  Recent Activities Logs ({activityLog.length}):
-                </span>
-                <div className="bg-theme-bg border border-theme-border rounded-xl p-3 max-h-40 overflow-y-auto space-y-2.5 font-mono text-[10px] scrollbar-thin">
-                  {activityLog.length === 0 ? (
-                    <p className="text-slate-500 italic select-none">No activity entries recorded yet today.</p>
-                  ) : (
-                    activityLog.map((log) => (
-                      <div key={log.id} className="border-b border-theme-border/40 pb-2 last:border-none last:pb-0 space-y-0.5">
-                        <div className="flex justify-between text-slate-500 select-none">
-                          <span className="font-bold text-theme-accent-secondary">{log.title}</span>
-                          <span>{log.timestamp}</span>
-                        </div>
-                        <p className="text-theme-muted">{log.detail}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-            </div>
-
-            <div className="pt-3 border-t border-theme-border/60 flex justify-end select-none">
-              <button 
-                onClick={() => setIsProgressOpen(false)}
-                className="px-4 py-1.5 bg-theme-accent-primary text-slate-950 rounded-lg text-xs font-semibold cursor-pointer hover:bg-theme-accent-primary/85"
-              >
-                Dismiss Diagnostics
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Floating dock Coach Chat widget */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">

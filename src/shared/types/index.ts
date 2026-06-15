@@ -1,4 +1,4 @@
-export type MainViewType = "dashboard" | "curriculum" | "calendar" | "timeline" | "trainer" | "assessments";
+export type MainViewType = "dashboard" | "curriculum" | "calendar" | "timeline" | "trainer" | "assessments" | "prep";
 
 export interface DBTodo {
   id: string; // e.g. "W1-D1-T1"

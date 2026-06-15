@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
@@ -72,7 +73,7 @@ Remember to use her Informatica experience as a supportive bridge, reminding her
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         systemInstruction: COACH_SYSTEM_INSTRUCTION,
@@ -143,7 +144,7 @@ Please audit her solution code.
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         systemInstruction: COACH_SYSTEM_INSTRUCTION,
@@ -203,7 +204,7 @@ app.post("/api/coach/chat", async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: formattedContents,
       config: {
         systemInstruction: COACH_SYSTEM_INSTRUCTION + `\nAlways respond in markdown, maintaining a supportive, warm, expert-engineer coaching persona. Boost her morale and reference Informatica counterparts dynamically.`,
@@ -219,6 +220,222 @@ app.post("/api/coach/chat", async (req, res) => {
   } catch (error: any) {
     console.error("Error in /api/coach/chat:", error);
     res.status(500).json({ error: error.message || "Failed to process message" });
+  }
+});
+
+// Endpoint 4: Direct Email Reminder API
+app.post("/api/coach/reminder", async (req, res) => {
+  try {
+    const { to = "athilavp@gmail.com", pendingCount = 0, progressPercent = 0, nextLessonTitle = "" } = req.body;
+    const gmailUser = "haripc525@gmail.com";
+    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+    const subject = "Today's Learning Session Awaits 🚀";
+    
+    const htmlBody = `
+      <div style="font-family: inherit, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e5e0; border-radius: 16px; background-color: #fafaf8; color: #171717;">
+        <h2 style="color: #4f46e5; font-size: 20px; font-weight: 800; margin-bottom: 16px; font-family: 'Fira Sans', sans-serif;">Today's Learning Session Awaits 🚀</h2>
+        <p style="font-size: 14px; line-height: 1.6; margin-bottom: 12px; font-family: 'Fira Sans', sans-serif;">Hello Athila,</p>
+        <p style="font-size: 14px; line-height: 1.6; margin-bottom: 16px; font-family: 'Fira Sans', sans-serif;">You have learning tasks scheduled today.</p>
+        
+        <div style="background-color: #ffffff; padding: 18px; border-left: 4px solid #4f46e5; border-radius: 8px; margin: 20px 0; border-top: 1px solid #e5e5e0; border-right: 1px solid #e5e5e0; border-bottom: 1px solid #e5e5e0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family: 'Fira Sans', sans-serif;">
+          <p style="margin: 0 0 10px 0; font-weight: bold; color: #171717; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">Your Roadmap Insights Today:</p>
+          <ul style="margin: 0; padding-left: 20px; color: #44403c; font-size: 14px; line-height: 1.6;">
+            <li style="margin-bottom: 6px;"><strong>Pending tasks count:</strong> <span style="color: #dc2626; font-weight: 700;">${pendingCount} units</span> remaining</li>
+            <li style="margin-bottom: 6px;"><strong>Current progress:</strong> ${progressPercent}% accomplished</li>
+            <li style="margin-bottom: 4px;"><strong>Recommended Next Lesson:</strong> <span style="color: #4f46e5; font-weight: 600;">${nextLessonTitle || "Core SQL/Python Unit"}</span></li>
+          </ul>
+        </div>
+        
+        <p style="font-size: 14px; line-height: 1.6; margin-top: 16px; font-family: 'Fira Sans', sans-serif;">Open your learning portal and complete today's lessons.</p>
+        <p style="font-size: 14px; line-height: 1.6; font-weight: 500; color: #44403c; font-family: 'Fira Sans', sans-serif;">Keep building momentum toward your Data Engineering goal.</p>
+        
+        <div style="margin-top: 32px; border-top: 1px solid #e5e5e0; padding-top: 16px; font-size: 13px; color: #78716c; line-height: 1.5; font-family: 'Fira Sans', sans-serif;">
+          Warmly,<br />
+          <strong style="color: #1c1917;">Hariprasad</strong><br />
+          Elite DE Career Advisor
+        </div>
+      </div>
+    `;
+
+    if (!gmailAppPassword || gmailAppPassword === "MY_GMAIL_APP_PASSWORD" || gmailAppPassword.trim() === "") {
+      return res.json({
+        success: true,
+        simulated: true,
+        message: "Email composed and logged (Sandbox Mode). Add your GMAIL_APP_PASSWORD to secrets!",
+        subject,
+        to,
+        body: htmlBody
+      });
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailAppPassword
+      }
+    });
+
+    const info = await transporter.sendMail({
+      from: `"DE Mentor" <${gmailUser}>`,
+      to: to,
+      subject: subject,
+      html: htmlBody,
+    });
+
+    res.json({
+      success: true,
+      simulated: false,
+      message: "Live Email sent successfully via Gmail!",
+      data: info
+    });
+  } catch (error: any) {
+    console.error("Error in /api/coach/reminder route:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to dispatch email reminder" });
+  }
+});
+
+// Quick Interview Prep API Routes
+
+app.post("/api/prep/analyze", async (req, res) => {
+  try {
+    const { jd, company, role, yoe, focusAreas } = req.body;
+    const ai = getGeminiClient();
+    if (!ai) {
+      return res.status(500).json({ success: false, error: "GEMINI_API_KEY is not configured." });
+    }
+
+    const prompt = `Analyze this Job Description for a ${role} at ${company} (Experience: ${yoe} years). Focus areas: ${focusAreas || "None"}.
+    Extract skills and categorize them. Return JSON ONLY with this exact structure:
+    {
+      "role": "${role}",
+      "company": "${company}",
+      "mustHave": ["skill1", "skill2"],
+      "goodToHave": ["skill3"],
+      "bonus": ["skill4"],
+      "difficulty": "e.g. Hard, Medium",
+      "difficultyReason": "short explanation"
+    }
+    
+    Job Description:
+    ${jd}
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    let text = response.text || "";
+    text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "").trim();
+    
+    res.json({ success: true, analysis: JSON.parse(text) });
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error?.message || "Unknown error" });
+  }
+});
+
+app.post("/api/prep/interview", async (req, res) => {
+  try {
+    const { analysisResult, history, currentCompetency, mode } = req.body;
+    const ai = getGeminiClient();
+    if (!ai) {
+      return res.status(500).json({ success: false, error: "GEMINI_API_KEY is not configured." });
+    }
+
+    const modeInstruction = mode === "mcq" ? 
+      "Ask a multiple choice question with 4 options (A, B, C, D). Clearly list the options. Evaluate if they picked the right one." :
+      mode === "coding" ? 
+      "Ask a coding, algorithm, or system design problem where the candidate needs to provide code or a structured technical architecture." :
+      "Ask a short, focused conceptual or experiential question.";
+
+    const transcript = history.map((m: any) => `${m.role === 'user' ? 'Candidate' : 'Interviewer'}: ${m.content}`).join('\n');
+
+    const prompt = `You are a Principal Software Engineer conducting a senior-level mock interview for a ${analysisResult.role} at ${analysisResult.company}.
+    You are evaluating the candidate's knowledge across: Must Have (${analysisResult.mustHave.join(', ')}), Good to Have, and Bonus skills.
+    
+    Interview Mode: ${mode}
+    Instruction for next question: ${modeInstruction}
+    
+    Below is the interview transcript so far:
+    ${transcript}
+
+    Your task is to:
+    1. Evaluate the candidate's last answer. Generate a short feedback, a score out of 10, an ideal answer overview, and a list of gaps missed.
+    2. Decide on the NEXT question to ask to probe another skill or go deeper, strictly adhering to the "Instruction for next question" above.
+    3. Update the competency matrix across relevant skills (out of 10). If a skill hasn't been tested, don't include it.
+    4. Provide the exact next Question that you want to ask. The next question should be your EXACT direct words asking the candidate the prompt (e.g. "Okay, let's move on. Imagine you have a...").
+
+    Return JSON ONLY:
+    {
+      "evaluation": {
+        "score": number,
+        "feedback": "string",
+        "idealAnswer": "string",
+        "gaps": ["string"]
+      },
+      "nextQuestion": "string",
+      "updatedCompetency": { "SkillName": 7 }
+    }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    let text = response.text || "";
+    text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "").trim();
+    const data = JSON.parse(text);
+    res.json({ success: true, ...data });
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post("/api/prep/learn", async (req, res) => {
+  try {
+    const { skill, role } = req.body;
+    const ai = getGeminiClient();
+    if (!ai) {
+      return res.status(500).json({ success: false, error: "GEMINI_API_KEY is not configured." });
+    }
+
+    const prompt = `You are a Staff/Principal Engineer teaching a candidate about the skill "${skill}" for a ${role} role.
+    Provide a deep-dive roadmap.
+    Return JSON ONLY with this structure:
+    {
+      "beginnerExplanation": "string",
+      "intermediateExplanation": "string",
+      "seniorExplanation": "string",
+      "practicalScenarios": [{ "scenario": "string", "tradeoff": "string" }],
+      "commonQuestions": ["string", "string"],
+      "advancedQuestions": ["string", "string"]
+    }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    let text = response.text || "";
+    text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "").trim();
+    res.json({ success: true, content: JSON.parse(text) });
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error?.message || "Unknown error" });
   }
 });
 
