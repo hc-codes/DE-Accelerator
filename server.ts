@@ -13,7 +13,13 @@ const PORT = 3000;
 app.use(express.json());
 
 // Helper function to lazy initialize GoogleGenAI safely
-function getGeminiClient() {
+function getGeminiClient(customApiKey?: string) {
+  if (customApiKey && customApiKey.trim() !== "") {
+    return new GoogleGenAI({
+      apiKey: customApiKey,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+    });
+  }
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey.trim() === "") {
     return null;
@@ -47,7 +53,7 @@ app.get("/api/health", (req, res) => {
 app.post("/api/coach/hint", async (req, res) => {
   try {
     const { dayId, focusTitle, riddleTitle, riddleText, currentCode } = req.body;
-    const ai = getGeminiClient();
+    const ai = getGeminiClient(req.body.customApiKey);
 
     if (!ai) {
       return res.json({
@@ -72,8 +78,9 @@ Please write a highly encouraging, high-energy mentor hint (max 150 words) to gu
 Remember to use her Informatica experience as a supportive bridge, reminding her of the visual counterparts she already thrives at! Do not reveal the full answer directly, instead ignite her analytical fire. Write in markdown.
 `;
 
+    const aiModel = req.body.aiModel || "gemini-3.5-flash";
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: aiModel,
       contents: prompt,
       config: {
         systemInstruction: COACH_SYSTEM_INSTRUCTION,
@@ -96,7 +103,7 @@ Remember to use her Informatica experience as a supportive bridge, reminding her
 app.post("/api/coach/submit", async (req, res) => {
   try {
     const { dayId, focusTitle, riddleTitle, riddleText, sourceCode } = req.body;
-    const ai = getGeminiClient();
+    const ai = getGeminiClient(req.body.customApiKey);
 
     if (!ai) {
       // Mock evaluation when key is missing to keep user feedback interactive and supportive
@@ -143,8 +150,9 @@ Please audit her solution code.
 5. Explicitly state whether the solution is "APPROVED" or "NEEDS REVISION". If it needs revision, give her a clear, actionable correction guide without discouraging her.
 `;
 
+    const aiModel = req.body.aiModel || "gemini-3.5-flash";
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: aiModel,
       contents: prompt,
       config: {
         systemInstruction: COACH_SYSTEM_INSTRUCTION,
@@ -170,7 +178,7 @@ Please audit her solution code.
 app.post("/api/coach/chat", async (req, res) => {
   try {
     const { messages, currentDayContext } = req.body;
-    const ai = getGeminiClient();
+    const ai = getGeminiClient(req.body.customApiKey);
 
     if (!ai) {
       return res.json({
@@ -203,8 +211,9 @@ app.post("/api/coach/chat", async (req, res) => {
       `;
     }
 
+    const aiModel = req.body.aiModel || "gemini-3.5-flash";
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: aiModel,
       contents: formattedContents,
       config: {
         systemInstruction: COACH_SYSTEM_INSTRUCTION + `\nAlways respond in markdown, maintaining a supportive, warm, expert-engineer coaching persona. Boost her morale and reference Informatica counterparts dynamically.`,
@@ -300,7 +309,7 @@ app.post("/api/coach/reminder", async (req, res) => {
 app.post("/api/prep/analyze", async (req, res) => {
   try {
     const { jd, company, role, yoe, focusAreas } = req.body;
-    const ai = getGeminiClient();
+    const ai = getGeminiClient(req.body.customApiKey);
     if (!ai) {
       return res.status(500).json({ success: false, error: "GEMINI_API_KEY is not configured." });
     }
@@ -326,8 +335,9 @@ app.post("/api/prep/analyze", async (req, res) => {
     ${jd}
     `;
 
+    const aiModel = req.body.aiModel || "gemini-3.5-flash";
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: aiModel,
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -351,7 +361,7 @@ app.post("/api/prep/analyze", async (req, res) => {
 app.post("/api/prep/interview", async (req, res) => {
   try {
     const { analysisResult, history, currentCompetency, mode } = req.body;
-    const ai = getGeminiClient();
+    const ai = getGeminiClient(req.body.customApiKey);
     if (!ai) {
       return res.status(500).json({ success: false, error: "GEMINI_API_KEY is not configured." });
     }
@@ -400,8 +410,9 @@ app.post("/api/prep/interview", async (req, res) => {
     }
     `;
 
+    const aiModel = req.body.aiModel || "gemini-3.5-flash";
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: aiModel,
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -425,7 +436,7 @@ app.post("/api/prep/interview", async (req, res) => {
 app.post("/api/prep/learn", async (req, res) => {
   try {
     const { skill, role } = req.body;
-    const ai = getGeminiClient();
+    const ai = getGeminiClient(req.body.customApiKey);
     if (!ai) {
       return res.status(500).json({ success: false, error: "GEMINI_API_KEY is not configured." });
     }
@@ -443,8 +454,9 @@ app.post("/api/prep/learn", async (req, res) => {
     }
     `;
 
+    const aiModel = req.body.aiModel || "gemini-3.5-flash";
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: aiModel,
       contents: prompt,
       config: {
         responseMimeType: "application/json"

@@ -67,7 +67,9 @@ export function DashboardPage({
           to: "athilavp@gmail.com",
           pendingCount: daysPending,
           progressPercent: overallProgressPercent,
-          nextLessonTitle: currentResumeDay?.focusTitle || "Relational Database Performance"
+          nextLessonTitle: currentResumeDay?.focusTitle || "Relational Database Performance",
+          aiModel: localStorage.getItem("de_selected_ai_model") || "gemini-3.5-flash",
+          customApiKey: localStorage.getItem("de_custom_api_key") || ""
         })
       });
       const data = await response.json();

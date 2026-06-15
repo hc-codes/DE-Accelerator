@@ -56,6 +56,23 @@ export default function App() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  // AI Model State
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    try {
+      return localStorage.getItem("de_selected_ai_model") || "gemini-3.5-flash";
+    } catch {
+      return "gemini-3.5-flash";
+    }
+  });
+
+  const [customApiKey, setCustomApiKey] = useState<string>(() => {
+    try {
+      return localStorage.getItem("de_custom_api_key") || "";
+    } catch {
+      return "";
+    }
+  });
+
   // Mobile specific modals
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingName, setEditingName] = useState(menteeName);
@@ -204,7 +221,9 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMsgs,
-          currentDayContext: activeDay
+          currentDayContext: activeDay,
+          aiModel: selectedModel,
+          customApiKey: customApiKey
         })
       });
       const data = await response.json();
@@ -749,6 +768,45 @@ export default function App() {
                     <span>Deep Reading</span>
                   </button>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono uppercase text-theme-muted font-bold block select-none">
+                  AI Model engine:
+                </label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => {
+                    const model = e.target.value;
+                    setSelectedModel(model);
+                    localStorage.setItem("de_selected_ai_model", model);
+                  }}
+                  className="w-full bg-theme-bg border border-theme-border rounded-lg p-2 text-theme-text text-xs focus:outline-none focus:border-theme-accent-primary font-mono cursor-pointer"
+                >
+                  <option value="gemini-3.5-flash">gemini-3.5-flash (Latest)</option>
+                  <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                  <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono uppercase text-theme-muted font-bold block select-none">
+                  Custom Gemini API Key (Optional):
+                </label>
+                <input
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={customApiKey}
+                  onChange={(e) => {
+                    const key = e.target.value;
+                    setCustomApiKey(key);
+                    localStorage.setItem("de_custom_api_key", key);
+                  }}
+                  className="w-full bg-theme-bg border border-theme-border rounded-lg p-2 text-theme-text text-xs focus:outline-none focus:border-theme-accent-primary font-mono"
+                />
+                <p className="text-[9px] text-theme-muted/70 mt-1">
+                  Overrides default app AI Studio quota if provided. Kept only on your personal device.
+                </p>
               </div>
 
               <div className="bg-theme-accent-secondary/5 border border-theme-border rounded-xl p-3 text-[11px] text-theme-muted leading-relaxed space-y-1 select-none">

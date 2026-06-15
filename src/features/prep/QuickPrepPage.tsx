@@ -19,7 +19,8 @@ export function QuickPrepPage() {
       const response = await fetch("/api/prep/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jd, company, role, yoe, focusAreas })
+        body: JSON.stringify({ jd, company, role, yoe, focusAreas, aiModel: localStorage.getItem("de_selected_ai_model") || "gemini-3.5-flash",
+          customApiKey: localStorage.getItem("de_custom_api_key") || "" })
       });
       const data = await response.json();
       if (data.success) {
@@ -248,7 +249,9 @@ function ActiveInterviewMode({ analysisResult, onBack, mode }: { analysisResult:
           body: JSON.stringify({
             analysisResult,
             history: [],
-            mode
+            mode,
+            aiModel: localStorage.getItem("de_selected_ai_model") || "gemini-3.5-flash",
+          customApiKey: localStorage.getItem("de_custom_api_key") || ""
           })
         });
         const data = await response.json();
@@ -287,7 +290,9 @@ function ActiveInterviewMode({ analysisResult, onBack, mode }: { analysisResult:
         body: JSON.stringify({
           analysisResult,
           history: messages.concat(userMessage),
-          mode
+          mode,
+          aiModel: localStorage.getItem("de_selected_ai_model") || "gemini-3.5-flash",
+          customApiKey: localStorage.getItem("de_custom_api_key") || ""
         })
       });
       const data = await response.json();
@@ -423,6 +428,8 @@ function LearningMode({ analysisResult, onBack }: { analysisResult: any, onBack:
         body: JSON.stringify({
           skill,
           role: analysisResult.role,
+          aiModel: localStorage.getItem("de_selected_ai_model") || "gemini-3.5-flash",
+          customApiKey: localStorage.getItem("de_custom_api_key") || ""
         })
       });
       const data = await response.json();

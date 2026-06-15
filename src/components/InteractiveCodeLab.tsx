@@ -395,7 +395,9 @@ export function InteractiveCodeLab({
           focusTitle: day.focusTitle,
           riddleTitle: day.riddleTitle,
           riddleText: day.riddleText,
-          currentCode: code
+          currentCode: code,
+          aiModel: localStorage.getItem("de_selected_ai_model") || "gemini-3.5-flash",
+          customApiKey: localStorage.getItem("de_custom_api_key") || ""
         })
       });
       const data = await response.json();
@@ -423,7 +425,9 @@ export function InteractiveCodeLab({
           focusTitle: day.focusTitle,
           riddleTitle: day.riddleTitle,
           riddleText: day.riddleText,
-          sourceCode: code
+          sourceCode: code,
+          aiModel: localStorage.getItem("de_selected_ai_model") || "gemini-3.5-flash",
+          customApiKey: localStorage.getItem("de_custom_api_key") || ""
         })
       });
       const data = await response.json();
